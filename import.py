@@ -27,11 +27,8 @@ def play_yawn_alarm():
         engine.runAndWait()
         time.sleep(1)
 
-# Alarm for hazard
-def play_hazard_alarm():
-    while hazard_alarm_on:
-        engine.say("Hazard lights activated! Driver not responding!")
-        engine.runAndWait()
+
+
 
 # Mediapipe face mesh setup
 mp_face_mesh = mp.solutions.face_mesh
@@ -58,10 +55,7 @@ MOUTH_OPEN_THRESHOLD = 25
 YAWN_FRAMES = 0
 YAWN_FRAME_LIMIT = 15
 
-HAZARD_TRIGGER_LIMIT = 100
-hazard_on = False
-hazard_blink_state = False
-hazard_last_toggle_time = time.time()
+
 
 ear_history = deque(maxlen=5)
 
@@ -100,19 +94,11 @@ while cap.isOpened():
                 eye_alarm_on = False
 
             if CLOSED_FRAMES > EYE_FRAME_LIMIT and not eye_alarm_on:
+                print(f"DROWSY_DETECTED:{time.time()}")
                 eye_alarm_on = True
                 threading.Thread(target=play_eye_alarm, daemon=True).start()
 
-            # Hazard trigger
-            if CLOSED_FRAMES > HAZARD_TRIGGER_LIMIT:
-                if not hazard_on:
-                    hazard_on = True
-                    if not hazard_alarm_on:
-                        hazard_alarm_on = True
-                        threading.Thread(target=play_hazard_alarm, daemon=True).start()
-            else:
-                hazard_on = False
-                hazard_alarm_on = False
+
 
             # Enhanced mouth tracking
             MOUTH_TRACK_IDX = [13, 14, 78, 308, 82, 87, 317, 312]  # key points around lips
@@ -135,6 +121,7 @@ while cap.isOpened():
                 yawn_alarm_on = False
 
             if YAWN_FRAMES > YAWN_FRAME_LIMIT and not yawn_alarm_on:
+                print(f"YAWN_DETECTED:{time.time()}")
                 yawn_alarm_on = True
                 threading.Thread(target=play_yawn_alarm, daemon=True).start()
 
@@ -149,15 +136,7 @@ while cap.isOpened():
             if YAWN_FRAMES > YAWN_FRAME_LIMIT:
                 cv2.putText(frame, "YAWNING DETECTED", (100, 250), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 165, 255), 3)
 
-            # Hazard blinking effect
-            if hazard_on:
-                current_time = time.time()
-                if current_time - hazard_last_toggle_time > 0.5:
-                    hazard_blink_state = not hazard_blink_state
-                    hazard_last_toggle_time = current_time
-                if hazard_blink_state:
-                    cv2.putText(frame, " HAZARD LIGHTS ACTIVATED ", (50, 350),
-                                cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 255), 3)
+
 
             for (x, y) in left_eye + right_eye:
                 cv2.circle(frame, (x, y), 2, (255, 0, 255), -1)
